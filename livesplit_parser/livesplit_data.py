@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime, timedelta
+import altair as alt
 
 class LivesplitData:
     def __init__(self, fpath, time_key='RealTime'):
@@ -25,19 +26,19 @@ class LivesplitData:
         self.split_info_df = self.__parse_segment_data(xml_dict, self.attempt_info_df)
         self.split_info_df = self.__add_float_seconds_cols(self.split_info_df, ['PersonalBest', 'BestSegment', 'Average', 'Median'])
 
-        # Optional metadata
-        metadata: dict = xml_dict.get('Metadata', {})
-        platform: dict = metadata.get('Platform', {})
-        variables: list = metadata.get('Variables', {}).get('Variable', [])
+        # # Optional metadata
+        # metadata: dict = xml_dict.get('Metadata', {})
+        # platform: dict = metadata.get('Platform', {})
+        # variables: list = metadata.get('Variables', {}).get('Variable', [])
         
-        self.game_name = xml_dict.get('GameName')
-        self.game_icon = xml_dict.get('GameIcon')
-        self.category_name = xml_dict.get('CategoryName')
-        self.layout_path = xml_dict.get('LayoutPath')
-        self.platform_name = platform.get('#text')
-        self.platform_uses_emulator = {'False': False, 'True': True}.get(platform.get('@usesEmulator'))
-        self.offset = xml_dict.get('Offset')
-        self.version = xml_dict.get('@version')
+        # self.game_name = xml_dict.get('GameName')
+        # self.game_icon = xml_dict.get('GameIcon')
+        # self.category_name = xml_dict.get('CategoryName')
+        # self.layout_path = xml_dict.get('LayoutPath')
+        # self.platform_name = platform.get('#text')
+        # self.platform_uses_emulator = {'False': False, 'True': True}.get(platform.get('@usesEmulator'))
+        # self.offset = xml_dict.get('Offset')
+        # self.version = xml_dict.get('@version')
 
     def export_data(self):
         # Specify the Excel file path
@@ -51,7 +52,7 @@ class LivesplitData:
             df1.to_excel(writer, sheet_name='Attempt Info')
             df2.to_excel(writer, sheet_name='Splits Info')
 
-    def plot_num_resets(self, drop_na=False, time_limit=None, plot=True) :
+    def plot_num_resets(self, drop_na=False, time_limit=None, plot=True):
         #retain only ids and times
         df = self.__get_completed_runs_data()[[self.time_key]]
 
@@ -381,7 +382,7 @@ class LivesplitData:
             med_splits.append(pd.to_timedelta(attempt_info_df[i]).median())
 
         segment_info_df['Median'] = med_splits
-        segment_info_df['Median'] = segment_info_df['Median'].astype(str).apply(lambda x: str(x).split()[-1])
+        segment_info_df['Median'] = segment_info_df['Median'].astype(str).apply(lambda x: x.split()[-1])
 
         # compute columns with actual split times
         def round_time(string):
@@ -409,6 +410,7 @@ class LivesplitData:
             sum_time = datetime.strptime(first_time, time_format)
 
             for i in range(1, len(idx)):
+            
                 curr_time = datetime.strptime(df[col_name][idx[i]], time_format)
                 sum_time += timedelta(hours=curr_time.hour, minutes=curr_time.minute, seconds=curr_time.second, microseconds=curr_time.microsecond)
                 segment_times.append(sum_time.strftime(time_format))
@@ -493,99 +495,4 @@ class LivesplitData:
     def __get_pb_id(self):
         return int(self.__get_completed_runs_data()[self.time_key].idxmin())
 
-class RunnerData:
-    # up to the user to create the dictionary of runners and usernames!
-    def __init__(self, runner_data_dict):
-        self.runner_data = runner_data_dict
 
-    def add_runner_data(self, username, data):
-        if username not in self.runner_data.keys():
-            self.runner_data[username] = data
-        else:
-            # TODO: Add a custom error message that gets thrown here
-            print(f"ERROR: User {username} already exists!")
-            print("Not adding user")
-
-    def remove_runner_data(self, username):
-        if username in self.runner_data.keys():
-            del self.runner_data[username]
-        else:
-            # TODO: Add a custom error message that gets thrown here
-            print(f"ERROR: User {username} does not exist!")
-
-    def update_runner_data(self, username, new_data):
-        if username in self.runner_data.keys():
-            self.runner_data[username] = new_data
-        else:
-            # TODO: Add a custom error message that gets thrown here
-            print(f"ERROR: User {username} does not exist!")
-
-    def get_runner(self, username):
-        return self.runner_data[username]
-      
-    def plot_percent_past(self, plot=True):
-        runner_usernames = list(self.runner_data.keys())
-        df = pd.DataFrame(columns=self.runner_data[runner_usernames[0]].split_info_df.index.to_list(), index=runner_usernames)
-        
-        for runner in runner_usernames:
-            curr_df = self.runner_data[runner].attempt_info_df
-            for col in df.columns:
-                df[col][runner] = (curr_df[(curr_df['RunCompleted'] == False) & (curr_df[col].isna())].shape[0] / self.runner_data[runner].num_attempts) * 100
-        
-        # Set up bar positions and width
-        columns = df.columns
-        x = np.arange(len(columns))  # the label locations
-        width = 0.35  # width of the bars
-
-        # Create the plot
-        fig, ax = plt.subplots(figsize=(10, 6))
-
-        # Plot each row as a separate set of bars
-        for i, row in enumerate(df.index):
-            ax.bar(x + i * width - (0.8 - width) / 2, df.loc[row], width, label=row)
-
-        # Labels and titles
-        ax.set_xlabel('Split')
-        ax.set_ylabel('Percent')
-        ax.set_title('Percentage of Runs Past A Given Split')
-        ax.set_xticks(x)
-        ax.set_xticklabels(columns, rotation=45, ha='right')  # Rotate x-axis labels
-        ax.legend()
-
-        # return the plot
-        if plot:
-            return fig
-          
-    def plot_num_attempts_comp(self, plot=True):
-        names = list(self.runner_data.keys())
-        num_attempts = []
-        num_completed_attempts = []
-        for k in self.runner_data.keys():
-            num_attempts.append(self.runner_data[k].num_attempts)
-            num_completed_attempts.append(self.runner_data[k].num_completed_attempts)
-
-        data = pd.DataFrame({
-        'Runner': names,
-        'Total Attempts': num_attempts,
-        'Completed Attempts': num_completed_attempts
-        })
-        
-        data_melted = data.melt(id_vars="Runner", var_name="Attempt Type", value_name="Count")
-
-        # Melt the DataFrame for seaborn with attempt types as x-axis
-        data_melted = data.melt(id_vars="Runner", var_name="Attempt Type", value_name="Count")
-
-        # Plot using seaborn
-        fig, ax = plt.subplots()
-        sns.barplot(x="Attempt Type", y="Count", hue="Runner", data=data_melted, ax=ax)
-
-        # Set labels and title
-        ax.set_title('Comparison of Total and Completed Attempts for Each Runner')
-        ax.set_xlabel('Attempt Type')
-        ax.set_ylabel('Number of Attempts')
-        plt.xticks(rotation=45)
-
-        # Return the figure if plotting is enabled
-        if plot:
-            fig = plt.gcf()
-            return fig

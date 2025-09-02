@@ -1,1 +1,2 @@
-from livesplit_parser.livesplit_parser import LivesplitData, RunnerData
+from livesplit_parser.livesplit_data import LivesplitData
+from livesplit_parser.runner_data import RunnerData
