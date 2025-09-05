@@ -46,9 +46,25 @@ class RunnerData:
     def get_runner(self, username):
         return self.runner_data[username]
 
+    #percentage of runs that pass a split
     def plot_percent_past(self, cumulative=False):
 
-        df = self._percentage_past_split()
+        runner_usernames = list(self.runner_data.keys())
+
+        # create df of just usernames and splits
+        df = pd.DataFrame(
+            columns=self.runner_data[runner_usernames[0]].split_info_df.index.to_list(),
+            index=runner_usernames
+        )
+        
+        # Fill df with percent values
+        for runner in runner_usernames:
+            curr_df = self.runner_data[runner].attempt_info_df
+            for col in df.columns:
+                df.loc[runner, col] = (
+                    curr_df[(curr_df[col].notna())].shape[0] 
+                    / self.runner_data[runner].num_attempts #returns number of non empty entries over total
+                ) * 100
 
         if cumulative:
             return self._plot_percent_past_cumulative(df)
@@ -88,6 +104,7 @@ class RunnerData:
 
 
     ###### HELPER FUNCTIONS ######
+    #returns true/false of whether two dataframes have the same number of splits
     def _matching_splits(self, main_df, new_df):
         return len(main_df.index) == len(new_df.index)
 
@@ -158,24 +175,3 @@ class RunnerData:
         )
 
         return chart
-    
-    #returns df of percentage of runs past each split for each runner
-    def _percentage_past_split(self):
-        runner_usernames = list(self.runner_data.keys())
-
-        # create df of just usernames and splits
-        df = pd.DataFrame(
-            columns=self.runner_data[runner_usernames[0]].split_info_df.index.to_list(),
-            index=runner_usernames
-        )
-        
-        # Fill df with percent values
-        for runner in runner_usernames:
-            curr_df = self.runner_data[runner].attempt_info_df
-            for col in df.columns:
-                df.loc[runner, col] = (
-                    curr_df[(curr_df[col].notna())].shape[0] 
-                    / self.runner_data[runner].num_attempts #returns number of non empty entries over total
-                ) * 100
-        
-        return df
