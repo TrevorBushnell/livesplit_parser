@@ -142,8 +142,10 @@ runner_dict = {'runner1username':runner1, 'runner2username':runner2}
 runner_data = RunnerData(runner_dict)
 ```
 
-### `RunnerData.plot_percent_past(plot=True -> bool)`
+### `RunnerData.plot_percent_past(cumulative=False -> bool)`
 
-Creates a side-by-side barplot showing the percentage of runs that get past a certain split. Each color represents a specific runner. If `plot=True`, then a `matplotlib` figure will be returned by the function. Otherwise, nothing will be returned.
+Creates a side-by-side barplot showing the percentage of runs that get past a certain split. Each color represents a specific runner. If cumulative is True, computes the percentages based on all attempts. If cumulative is False (default), computes the perecntages based on the number of runs that got to that specific split.
 
-* `plot`: Determines whether you want to see a plot or not. If `True`, returns a `matplotlib` figure object. Otherwise, this function returns nothing.
+EX: In SM64 16 Star with splits BOB, WF, CCM, etc..., cumulative=True would compute the % past based on all attempts, but the % past for WF would be the percentage of runs that got past WF **of the runs that got to WF**.
+
+Returns an altair Chart object containing the plot of the percent past.
