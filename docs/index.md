@@ -36,10 +36,15 @@ Passing in anything other than `RealTime` or `GameTime` into `time_key` will res
 
 These are the following private member variables you have access to with every `LivesplitData` object:
 
-* `LivesplitData.name -> str`: the name of the splits. This is just pulled from the file name.
+* `LivesplitData.game_name -> str`: the game the splits are based on
+* `LivesplitData.category_name -> str`: the category the splits are based on
+* `LivesplitData.time_key -> str`: Whether data is being read with `RealTime` or `GameTime`. Must be one of those two values, otherwise raises a `ValueError`
+* `LivesplitData.platform -> str | None`: The platform the speedruns were done on. May not exist.
+* `LivesplitData.region -> str | None`: The region the version of the game is run. May not exist.
 * `LivesplitData.num_attempts -> int`: the number of attempts for your run
 * `LivesplitData.num_completed_attempts -> int`: the number of attempts that were also completed runs
 * `LivesplitData.percent_runs_completed -> float`: the percentage of all your attempts that were completed (this is just `LivesplitData.num_completed_attempts / LivesplitData.num_attempts * 100`)
+* `LivesplitData.metadata -> dict | None`: Additional metadata stored in the splits. This is a dictionary of string keys to additional strings, dicts, floats, etc. Parts or all of the metadata may not exist.
 * `LivesplitData.attempt_info_df -> pandas.DataFrame`: A `pandas.DataFrame` object containing information about every attempt. Each row is an attempt indexed by an ID. The columns of the dataframe are as follows:
   * `started`: timestamp of when the attempt started
   * `isStartedSynced`: ?????
@@ -74,13 +79,9 @@ From here, you can use the other included functions (listed below) to get some p
 
 Writes the data within the Livesplit file to an Excel sheet. The first sheet is the data for each specific attempt, and the second sheet is the info for each of your splits. The name of the sheet will be the name of the split file by default.
 
-### `LivesplitData.plot_num_resets(drop_na -> bool, time_limit -> str, plot -> bool)`
+### `LivesplitData.plot_num_resets() -> altair.Chart`
 
-Takes the attempt data and plots the number of resets on the y-axis between each completed run whose ID is on the x-axis. This aims to show how reset-prone you were during different times, with lower points indicating less resets.
-
-* `drop_na`: Whether to include rows that have missing data from your plot. The default value is set to `False`.
-* `time_limit`: Determines an optional upper bound for times included in the plot. Must be in the format 'hh:mm:ss'. No upper bound by default.
-* `plot`: Determines whether you want to see this as a standalone graph. Setting this to `True` will cause `plt.show()` to be run. Setting this to `False` will cause `plt.show()` to not be running, allowing you to add more graphs to your plot should you want to do that. The default value is set to `True`.
+Takes the attempt data and plots the number of resets on the y-axis between each completed run whose ID is on the x-axis. This aims to show how reset-prone you were during different times, with lower points indicating less resets. Returns an altair Chart that can be used for data analysis.
 
 ### `LivesplitData.chance_run_continues(split_name -> str) -> float`
 
